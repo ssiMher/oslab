@@ -1,7 +1,6 @@
 #include "boot.h"
 
 // DO NOT DEFINE ANY NON-LOCAL VARIBLE!
-
 void load_kernel() {
   //char hello[] = {'\n', 'h', 'e', 'l', 'l', 'o', '\n', 0};
   //putstr(hello);
