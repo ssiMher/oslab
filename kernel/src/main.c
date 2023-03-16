@@ -16,7 +16,7 @@ int main() {
   init_fs();
   init_page(); // uncomment me at Lab1-4
   init_cte(); // uncomment me at Lab1-5
-  //init_timer(); // uncomment me at Lab1-7
+  init_timer(); // uncomment me at Lab1-7
   //init_proc(); // uncomment me at Lab2-1
   //init_dev(); // uncomment me at Lab3-1
   printf("Hello from OS!\n");
@@ -31,12 +31,18 @@ void init_user_and_go() {
   // Lab1-8: argv
   // Lab2-1: proc
   // Lab3-2: add cwd
+  // PD *pgdir = vm_alloc();
+  // //uint32_t eip = load_elf(pgdir, "loaduser");
+  // uint32_t eip = load_elf(pgdir, "brktest");
+  // assert(eip != -1);
+  // set_cr3(pgdir);
+  // stack_switch_call((void*)(USR_MEM - 16), (void*)eip, 0);
   PD *pgdir = vm_alloc();
-  //uint32_t eip = load_elf(pgdir, "loaduser");
-  uint32_t eip = load_elf(pgdir, "brktest");
-  assert(eip != -1);
+  Context ctx;
+  assert(load_user(pgdir, &ctx, "loaduser", NULL) == 0);
   set_cr3(pgdir);
-  stack_switch_call((void*)(USR_MEM - 16), (void*)eip, 0);
+  set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
+  irq_iret(&ctx);
 
   // uint32_t eip = load_elf(NULL, "loaduser");
   // assert(eip != -1);

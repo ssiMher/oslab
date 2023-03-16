@@ -59,7 +59,13 @@ int sys_brk(void *addr) {
 }
 
 void sys_sleep(int ticks) {
-  TODO(); // Lab1-7
+  //TODO(); // Lab1-7
+  uint32_t start = get_tick();
+  while(get_tick()-start<ticks){
+    sti();
+    hlt();
+    cli();
+  }
 }
 
 int sys_exec(const char *path, char *const argv[]) {

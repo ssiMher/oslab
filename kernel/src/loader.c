@@ -92,7 +92,9 @@ int load_user(PD *pgdir, Context *ctx, const char *name, char *const argv[])
   ctx->cs = USEL(SEG_UCODE);
   ctx->ds = USEL(SEG_UDATA);
   ctx->eip = eip;
+  ctx->ss = USEL(SEG_UDATA);
+  ctx->esp = USR_MEM - 16;
   // TODO: Lab1-6 init ctx->ss and esp
-  ctx->eflags = 0x002; // TODO: Lab1-7 change me to 0x202
+  ctx->eflags = 0x202; // TODO: Lab1-7 change me to 0x202
   return 0;
 }

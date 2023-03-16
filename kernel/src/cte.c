@@ -113,6 +113,14 @@ void irq_handle(Context *ctx) {
     vm_pgfault(get_cr2(),ctx->errcode);
     break;
   }
+  case(T_IRQ0 + IRQ_TIMER):{
+    timer_handle();
+    break;
+  }
+  case(T_IRQ0 + IRQ_COM1):{
+    serial_handle();
+    break;
+  }
   case(EX_SYSCALL):{
     do_syscall(ctx);
     break;
