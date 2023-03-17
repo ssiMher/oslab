@@ -37,11 +37,17 @@ void init_user_and_go() {
   // assert(eip != -1);
   // set_cr3(pgdir);
   // stack_switch_call((void*)(USR_MEM - 16), (void*)eip, 0);
+
+  
   PD *pgdir = vm_alloc();
   Context ctx;
-  assert(load_user(pgdir, &ctx, "loaduser", NULL) == 0);
+  //char *argv[] = {"echo", "hello", "world", NULL};
+  char *argv[] = {"sh1",NULL};
+  assert(load_user(pgdir, &ctx, "sh1", argv) == 0);
   set_cr3(pgdir);
   set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
+  //putchar('p');
+  //Log("argv[0]addr:0x%x\n",&argv[1]);
   irq_iret(&ctx);
 
   // uint32_t eip = load_elf(NULL, "loaduser");

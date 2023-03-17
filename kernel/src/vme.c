@@ -47,6 +47,7 @@ void init_page()
     {
       void *va = (void*)((i << DIR_SHIFT) | (j << TBL_SHIFT));
       kpt[i].pte[j].val = MAKE_PTE(va, 1);
+      //if(i>0||j>=512)kpt[i].pte[j].present = 0;
     }
   }
 
@@ -62,6 +63,7 @@ void init_page()
     free_page_list = free_page_list->next;
   }
   free_page_list = temppage;
+   
 
 //  TODO();
 }
@@ -74,9 +76,11 @@ void *kalloc()
     memset(va,0,4096);
   //  Log("kalloc:%x  ",va);
     
-  //  int index = (int)va >> 22 & 0x3ff;
-  //  int jndex = ((int)va << 10) >> 22 & 0x3ff;
-  //  kpt[index].pte[jndex].present = 1;
+    int index = (int)va >> 22 & 0x3ff;
+    int jndex = ((int)va << 10) >> 22 & 0x3ff;
+    //Log("kpt[%d].pte[%d].precent = %d\n",index,jndex,kpt[index].pte[jndex].present);
+    kpt[index].pte[jndex].present = 1;
+    
     return va;
   }
   else{
@@ -92,9 +96,15 @@ void kfree(void *ptr)
     assert(0);
   }
   void* va = free_page_list;
+  memset(ptr,0,4096);
   free_page_list = ptr;
   free_page_list->next = va;
 
+  int index = (int)ptr >> 22 & 0x3ff;
+  int jndex = ((int)ptr << 10) >> 22 & 0x3ff;
+  kpt[index].pte[jndex].present = 0;
+  //Log("kpt[%d].pte[%d].precent = 0\n",index,jndex);
+  set_cr3(vm_curr());
   // Lab1-4: free a page to kernel heap
   // you can just do nothing :)
   // TODO();
@@ -108,6 +118,15 @@ PD *vm_alloc()
   {
     pgdir->pde[i].val = MAKE_PDE(&kpt[i], 1);   
   }
+  // for (int i = 0; i < (PHY_MEM / PT_SIZE); i++)
+  // {
+  //   pgdir->pde[i].val = MAKE_PDE(&kpt[i], 1);
+  //   for (int j = 0; j < NR_PTE; j++)
+  //   {
+  //     void *va = (void*)((i << DIR_SHIFT) | (j << TBL_SHIFT));
+  //     kpt[i].pte[j].val = MAKE_PTE(va, 1);
+  //   }
+  // }
   for(int i = 32; i< 1024; i++){
     pgdir->pde[i].val = 0;
   }
@@ -133,6 +152,7 @@ PTE *vm_walkpte(PD *pgdir, size_t va, int prot)
   // if not exist (PDE of va is empty) and prot&1, alloc PT and fill the PDE
   // if not exist (PDE of va is empty) and !(prot&1), return NULL
   // remember to let pde's prot |= prot, but not pte
+  assert(va>=PHY_MEM);
   int pte_index = ADDR2TBL(va);
   int pde_index = ADDR2DIR(va);
   PDE* pde_pointer = &pgdir->pde[pde_index];
@@ -141,7 +161,7 @@ PTE *vm_walkpte(PD *pgdir, size_t va, int prot)
   if(pde_pointer->present==0){
     if(prot!=0){
       PT* pt = kalloc();
-      pde_pointer->val |= prot;
+      //pde_pointer->val |= prot;
       pde_pointer->val = MAKE_PDE(pt, prot);
       PTE* pte_pointer = &(pt->pte[pte_index]);
       return pte_pointer;
@@ -165,7 +185,13 @@ void *vm_walk(PD *pgdir, size_t va, int prot)
   // Lab1-4: translate va to pa
   // if prot&1 and prot voilation ((pte->val & prot & 7) != prot), call vm_pgfault
   // if va is not mapped and !(prot&1), return NULL
-  TODO();
+  
+  PTE* pte = vm_walkpte(pgdir,va,prot);
+  if((prot&1)&&((pte->val & prot & 7) != prot)) vm_pgfault(va, 114514);
+  if((pte==NULL||pte->present==0)&&!(prot&1))return NULL;
+  void* page = PTE2PG(*pte);
+  //Log("vm_walk return Physical addr:0x%x\n",(int)page);
+  return page;
 }
 
 void vm_map(PD *pgdir, size_t va, size_t len, int prot)

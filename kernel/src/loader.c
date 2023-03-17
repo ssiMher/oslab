@@ -59,13 +59,24 @@ uint32_t load_arg(PD *pgdir, char *const argv[])
 {
   // Lab1-8: Load argv to user stack
   char *stack_top = (char *)vm_walk(pgdir, USR_MEM - PGSIZE, 7) + PGSIZE;
+  //Log("stack_top:0x%x\n",(int)stack_top);
+  //char* base = (char *)vm_walk(pgdir, USR_MEM - PGSIZE, 7);
+  //char *stack_top = (void*)((size_t)base + PGSIZE);
   size_t argv_va[MAX_ARGS_NUM + 1];
   int argc;
   for (argc = 0; argv[argc]; ++argc)
   {
     assert(argc < MAX_ARGS_NUM);
     // push the string of argv[argc] to stack, record its va to argv_va[argc]
-    TODO();
+    //TODO();
+    int len = strlen(argv[argc]);
+    uint32_t top = (uint32_t)stack_top;
+    top-=(len+1);
+    stack_top = (void*)top;
+    strcpy(stack_top, argv[argc]);
+    argv_va[argc] = USR_MEM - PGSIZE + ADDR2OFF(stack_top); 
+    
+
   }
   argv_va[argc] = 0;                    // set last argv NULL
   stack_top -= ADDR2OFF(stack_top) % 4; // align to 4 bytes
@@ -74,13 +85,18 @@ uint32_t load_arg(PD *pgdir, char *const argv[])
     // push the address of argv_va[argc] to stack to make argv array
     stack_top -= sizeof(size_t);
     *(size_t *)stack_top = argv_va[i];
+    
   }
   // push the address of the argv array as argument for _start
-  TODO();
+  //TODO();
+  stack_top -= sizeof(size_t);
+  *(size_t *)stack_top = USR_MEM - PGSIZE + ADDR2OFF(stack_top) + sizeof(size_t);
+  //Log("&argv = 0x%x\n", (int)&argv);
   // push argc as argument for _start
   stack_top -= sizeof(size_t);
   *(size_t *)stack_top = argc;
   stack_top -= sizeof(size_t); // a hole for return value (useless but necessary)
+  //Log("stack_top:0x%x\n",(int)stack_top);
   return USR_MEM - PGSIZE + ADDR2OFF(stack_top);
 }
 
@@ -93,7 +109,8 @@ int load_user(PD *pgdir, Context *ctx, const char *name, char *const argv[])
   ctx->ds = USEL(SEG_UDATA);
   ctx->eip = eip;
   ctx->ss = USEL(SEG_UDATA);
-  ctx->esp = USR_MEM - 16;
+  //ctx->esp = USR_MEM - 16;
+  ctx->esp = load_arg(pgdir, argv);//lab1-8
   // TODO: Lab1-6 init ctx->ss and esp
   ctx->eflags = 0x202; // TODO: Lab1-7 change me to 0x202
   return 0;

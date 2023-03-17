@@ -69,7 +69,20 @@ void sys_sleep(int ticks) {
 }
 
 int sys_exec(const char *path, char *const argv[]) {
-  TODO(); // Lab1-8, Lab2-1
+  //TODO(); // Lab1-8, Lab2-1
+  PD* pgdir = vm_alloc();
+  Context ctx;
+  //char *argv[] = {"echo", "hello", "world", NULL};
+  if(load_user(pgdir, &ctx, path, argv) != 0){
+    //kfree(pgdir);
+    return -1;
+  }
+  //PD* oldpd = vm_curr();
+  set_cr3(pgdir);
+  //kfree(oldpd);
+  set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
+  //putchar('p');
+  irq_iret(&ctx);
 }
 
 int sys_getpid() {

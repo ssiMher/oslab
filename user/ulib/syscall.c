@@ -4,6 +4,7 @@
 int syscall(int num, 
             size_t arg1, size_t arg2, size_t arg3, size_t arg4, size_t arg5) {
   int ret;
+  
   asm volatile (
     "int $0x80"
     : "=a"(ret)
@@ -45,6 +46,7 @@ int fork() {
 }
 
 void exit(int status) {
+  
   syscall(SYS_exit, (size_t)status, 0, 0, 0, 0);
   while (1) ;
 }
