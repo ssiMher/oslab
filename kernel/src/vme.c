@@ -72,15 +72,15 @@ void *kalloc()
 {
   if((int)free_page_list<PHY_MEM){
     void * va = free_page_list;
-    free_page_list = free_page_list->next;
-    memset(va,0,4096);
-  //  Log("kalloc:%x  ",va);
-    
-    int index = (int)va >> 22 & 0x3ff;
-    int jndex = ((int)va << 10) >> 22 & 0x3ff;
+    int index = ((int)va >> 22) & 0x3ff;
+    int jndex = (((int)va << 10) >> 22) & 0x3ff;
     //Log("kpt[%d].pte[%d].precent = %d\n",index,jndex,kpt[index].pte[jndex].present);
     kpt[index].pte[jndex].present = 1;
     
+    free_page_list = free_page_list->next;
+    memset(va,0,4096);
+    
+  //  Log("kalloc:%x  ",va);
     return va;
   }
   else{
@@ -95,15 +95,20 @@ void kfree(void *ptr)
   if((int)ptr<KER_MEM||(int)ptr>PHY_MEM){
     assert(0);
   }
-  void* va = free_page_list;
-  memset(ptr,0,4096);
-  free_page_list = ptr;
-  free_page_list->next = va;
+  int index = ((int)ptr >> 22) & 0x3ff;
+  int jndex = (((int)ptr << 10) >> 22) & 0x3ff;
+  assert(kpt[index].pte[jndex].present==1);
+  
 
-  int index = (int)ptr >> 22 & 0x3ff;
-  int jndex = ((int)ptr << 10) >> 22 & 0x3ff;
+  memset(ptr,0,4096);
+  void* va = free_page_list;
+  
+  free_page_list = (page_t*)ptr;
+  free_page_list->next = va;
   kpt[index].pte[jndex].present = 0;
-  //Log("kpt[%d].pte[%d].precent = 0\n",index,jndex);
+  
+  
+  Log("kpt[%d].pte[%d].precent = 0\n",index,jndex);
   set_cr3(vm_curr());
   // Lab1-4: free a page to kernel heap
   // you can just do nothing :)
@@ -227,9 +232,39 @@ void vm_unmap(PD *pgdir, size_t va, size_t len)
 {
   // Lab1-4: unmap and free [va, va+len) at pgdir
   // you can just do nothing :)
-  // assert(ADDR2OFF(va) == 0);
-  // assert(ADDR2OFF(len) == 0);
+   assert(ADDR2OFF(va) == 0);
+   assert(ADDR2OFF(len) == 0);
   // TODO();
+  size_t start = PAGE_DOWN(va);
+  size_t end = PAGE_UP(va + len);
+  assert(start >= PHY_MEM);
+  assert(end >= start);
+
+  PTE* pte;
+  while(start<end){
+    //Log("1unmap:start %d\n",start);
+    
+    pte = vm_walkpte(pgdir, end, 7);
+    
+    assert(pte!=NULL);
+    //assert(start!=134533120);
+    if(pte->present==1){
+      //pte->present = 1;
+      
+      kfree(pte);
+      
+    }
+    else{
+      
+    }
+    start+=PGSIZE;
+    //end-=PGSIZE;
+    //Log("2unmap:start %xd\n",start);
+  }
+  
+  if(pgdir == vm_curr()){
+    set_cr3(vm_curr());
+  }
 }
 
 void vm_copycurr(PD *pgdir)

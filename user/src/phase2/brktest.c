@@ -3,6 +3,7 @@
 void test() {
   printf("brktest: start\n");
   volatile uint8_t *m = sbrk(4096 * 10);
+  
   assert(m != (void*)-1);
   for (int i = 0; i < 10; ++i) {
     m[i * 4096 + i] = (i & 0xff);
@@ -10,7 +11,9 @@ void test() {
   for (int i = 0; i < 10; ++i) {
     assert(m[i * 4096 + i] == (i & 0xff));
   }
+  
   sbrk(-4096 * 10);
+  
   for (int i = 0; i < 10; ++i) {
     volatile uint8_t *n = malloc(4096);
     assert(n);

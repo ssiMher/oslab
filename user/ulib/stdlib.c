@@ -1,14 +1,17 @@
 #include "ulib.h"
 
 void *sbrk(int increment) {
+  
   extern char end;
   static uint32_t old_brk = 0;
   if (old_brk == 0) {
     old_brk = ((uint32_t)(&end) + 4095) & 0xfffff000;
     assert(brk((void*)old_brk) == 0);
   }
+  
   void *m = (void*)old_brk;
   if (brk((void*)(old_brk + increment)) == 0) {
+    
     old_brk += increment;
     return m;
   } else {

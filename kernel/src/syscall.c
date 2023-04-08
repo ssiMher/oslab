@@ -52,8 +52,12 @@ int sys_brk(void *addr) {
     brk = new_brk;
     //TODO();
   } else if (new_brk < brk) {
-    // can just do nothing
     //assert(0);
+    // can just do nothing
+    uint32_t len = (uint32_t)brk - (uint32_t)new_brk;
+    vm_unmap(vm_curr(),new_brk, len);
+    brk = new_brk;
+    
   }
   return 0;
 }
