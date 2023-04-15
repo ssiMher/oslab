@@ -28,10 +28,11 @@ static inline bool serial_idle() {
 void putchar(char ch) {
   //while (!serial_idle()) ;
   while ((inb(SERIAL_PORT + 5) & 0x20) == 0) {
-    sti();
-    hlt();
-    //if((inb(SERIAL_PORT + 5) & 0x20) != 0)
-    cli();
+    // sti();
+    // hlt();
+    // //if((inb(SERIAL_PORT + 5) & 0x20) != 0)
+    // cli();
+    proc_yield();
   }
   outb(SERIAL_PORT, ch);
 }

@@ -41,7 +41,9 @@ int sys_read(int fd, void *buf, size_t count) {
 
 int sys_brk(void *addr) {
   // TODO: Lab1-5
-  static size_t brk = 0; // use brk of proc instead of this in Lab2-1
+  //static size_t brk = 0; // use brk of proc instead of this in Lab2-1
+  proc_t* proc = proc_curr();
+  size_t brk = proc->brk;
   size_t new_brk = PAGE_UP(addr);
   if (brk == 0) {
     brk = new_brk;
@@ -66,9 +68,10 @@ void sys_sleep(int ticks) {
   //TODO(); // Lab1-7
   uint32_t start = get_tick();
   while(get_tick()-start<ticks){
-    sti();
-    hlt();
-    cli();
+    // sti();
+    // hlt();
+    // cli();
+    proc_yield();
   }
 }
 
@@ -81,6 +84,8 @@ int sys_exec(const char *path, char *const argv[]) {
     //kfree(pgdir);
     return -1;
   }
+  proc_t* proc = proc_curr();
+  proc->pgdir = pgdir;
   //PD* oldpd = vm_curr();
   set_cr3(pgdir);
   //kfree(oldpd);
@@ -90,7 +95,7 @@ int sys_exec(const char *path, char *const argv[]) {
 }
 
 int sys_getpid() {
-  TODO(); // Lab2-1
+  return proc_curr()->pid; // Lab2-1
 }
 
 void sys_yield() {

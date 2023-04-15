@@ -11,19 +11,35 @@ static proc_t *curr = &pcb[0];
 
 void init_proc() {
   // Lab2-1, set status and pgdir
+  pcb[0].status = RUNNING;
+  pcb[0].pgdir = vm_curr();
   // Lab2-4, init zombie_sem
   // Lab3-2, set cwd
 }
 
 proc_t *proc_alloc() {
   // Lab2-1: find a unused pcb from pcb[1..PROC_NUM-1], return NULL if no such one
-  TODO();
+  int i = 1;
+  for(; i < PROC_NUM;i++){
+    if(pcb[i].status==UNUSED)break;
+  }
+  if(i==PROC_NUM)return NULL;
   // init ALL attributes of the pcb
+  pcb[i].pid = next_pid;
+  next_pid++;
+  pcb[i].status=UNINIT;
+  pcb[i].pgdir = vm_alloc();
+  pcb[i].brk = 0;
+  pcb[i].kstack = kalloc();
+  pcb[i].ctx = &(pcb[i].kstack->ctx);
+  return &pcb[i];
 }
 
 void proc_free(proc_t *proc) {
   // Lab2-1: free proc's pgdir and kstack and mark it UNUSED
-  TODO();
+  if(proc!=curr){
+    proc->status=UNUSED;
+  }
 }
 
 proc_t *proc_curr() {
@@ -98,5 +114,12 @@ file_t *proc_getfile(proc_t *proc, int fd) {
 
 void schedule(Context *ctx) {
   // Lab2-1: save ctx to curr->ctx, then find a READY proc and run it
-  TODO();
+  curr->ctx = ctx;
+  int i = curr-pcb;
+  i = (i + 1) % PROC_NUM;
+  for(;;i++){
+    i%=PROC_NUM;
+    if(pcb[i].status==READY)break;
+  }
+  proc_run(&pcb[i]);
 }

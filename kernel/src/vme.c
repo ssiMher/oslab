@@ -75,9 +75,10 @@ void *kalloc()
     int index = ((int)va >> 22) & 0x3ff;
     int jndex = (((int)va << 10) >> 22) & 0x3ff;
     //Log("kpt[%d].pte[%d].precent = %d\n",index,jndex,kpt[index].pte[jndex].present);
+    free_page_list = free_page_list->next;
     kpt[index].pte[jndex].present = 1;
     
-    free_page_list = free_page_list->next;
+    
     memset(va,0,4096);
     
   //  Log("kalloc:%x  ",va);
@@ -103,10 +104,10 @@ void kfree(void *ptr)
   memset(ptr,0,4096);
   void* va = free_page_list;
   
-  free_page_list = (page_t*)ptr;
-  free_page_list->next = va;
   kpt[index].pte[jndex].present = 0;
   
+  free_page_list = (page_t*)ptr;
+  free_page_list->next = va;
   
   Log("kpt[%d].pte[%d].precent = 0\n",index,jndex);
   set_cr3(vm_curr());
@@ -143,7 +144,7 @@ void vm_teardown(PD *pgdir)
 {
   // Lab1-4: free all pages mapping above PHY_MEM in pgdir, then free itself
   // you can just do nothing :)
-  // TODO();
+  
 }
 
 PD *vm_curr()
