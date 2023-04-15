@@ -103,19 +103,29 @@ void sys_yield() {
 }
 
 int sys_fork() {
-  TODO(); // Lab2-2
+  proc_t* proc =  proc_alloc(); // Lab2-2
+  
+  if(proc==NULL)return -1;
+  
+  proc_copycurr(proc);
+  
+  proc_addready(proc);
+  return proc->pid;
 }
 
 void sys_exit(int status) {
-  TODO(); // Lab2-3
+  while (1) proc_yield(); // Lab2-3
 }
 
 int sys_wait(int *status) {
-  TODO(); // Lab2-3, Lab2-4
+   // Lab2-3, Lab2-4
+  sys_sleep(250);
+  return 0;
 }
 
 int sys_sem_open(int value) {
-  TODO(); // Lab2-5
+   TODO();// Lab2-5
+  
 }
 
 int sys_sem_p(int sem_id) {

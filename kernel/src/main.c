@@ -62,14 +62,8 @@ void init_user_and_go() {
   //proc_run(proc);
   proc_t *proc = proc_alloc();
 assert(proc);
-char *argv[] = {"ping1", "114514", NULL};
-assert(load_user(proc->pgdir, proc->ctx, "ping2", argv) == 0);
-proc_addready(proc);
-
-proc = proc_alloc();
-assert(proc);
-argv[1] = "1919810";
-assert(load_user(proc->pgdir, proc->ctx, "ping2", argv) == 0);
+char *argv[] = {"dfstest", NULL};
+assert(load_user(proc->pgdir, proc->ctx, "dfstest", argv) == 0);
 proc_addready(proc);
 
 sti();

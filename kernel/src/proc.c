@@ -32,6 +32,8 @@ proc_t *proc_alloc() {
   pcb[i].brk = 0;
   pcb[i].kstack = kalloc();
   pcb[i].ctx = &(pcb[i].kstack->ctx);
+  pcb[i].parent = NULL;
+  pcb[i].child_num = 0;
   return &pcb[i];
 }
 
@@ -67,10 +69,21 @@ void proc_yield() {
 
 void proc_copycurr(proc_t *proc) {
   // Lab2-2: copy curr proc
+  vm_copycurr(proc->pgdir);
+  
+  proc->brk = curr->brk;
+  proc->kstack->ctx = curr->kstack->ctx;
+  //proc->ctx = &(proc->kstack->ctx);
+  
+  proc->ctx->eax = 0;
+  proc->parent = curr;
+  //printf("111\n");
+  (curr->child_num)++;
+  
   // Lab2-5: dup opened usems
   // Lab3-1: dup opened files
   // Lab3-2: dup cwd
-  TODO();
+  
 }
 
 void proc_makezombie(proc_t *proc, int exitcode) {
