@@ -17,7 +17,13 @@ void init_timer() {
 
 void timer_handle() {
   ++tick;
+  //cli();
+  //if(tick%100==0){
+  //  printf("timer: %d\n",tick);
   proc_yield(); // TODO: uncomment me in Lab2-1
+  //}
+  //printf("timer\n");
+  //sti();
 }
 
 uint32_t get_tick() {

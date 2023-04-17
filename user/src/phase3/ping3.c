@@ -3,7 +3,7 @@
 void test(int pid, int is_parent, int x) {
   for (int i = 0; i < 8; ++i) {
     printf("%s: pid=%d, i=%d, x=%d\n", is_parent ? "ping" : "pong", pid, i, x);
-    sleep(25);
+    //sleep(25);
   }
 }
 
@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   printf("pingpong start\n");
   
   int pid = fork();
-  
+  //printf("ping3 childpid: %d\n",pid);
   if (pid == -1) {
     printf("pingpong: fork failed\n");
   } else if (pid != 0) { // parent

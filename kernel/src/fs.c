@@ -39,6 +39,7 @@ void init_fs() {
 inode_t *iopen(const char *path, int type) {
   for (int i = 0; i < MAX_INODE; ++i) {
     if (!inodes[i].valid) continue;
+    assert(path!=0);
     if (strcmp(path, inodes[i].dinode.name) == 0) {
       return &inodes[i];
     }

@@ -42,11 +42,11 @@ void init_page()
   // Lab1-4: init kpd and kpt, identity mapping of [0 (or 4096), PHY_MEM)
   for (int i = 0; i < (PHY_MEM / PT_SIZE); i++)
   {
-    kpd.pde[i].val = MAKE_PDE(&kpt[i], 1);
+    kpd.pde[i].val = MAKE_PDE(&kpt[i], 7);
     for (int j = 0; j < NR_PTE; j++)
     {
       void *va = (void*)((i << DIR_SHIFT) | (j << TBL_SHIFT));
-      kpt[i].pte[j].val = MAKE_PTE(va, 1);
+      kpt[i].pte[j].val = MAKE_PTE(va, 7);
       //if(i>0||j>=512)kpt[i].pte[j].present = 0;
     }
   }
@@ -63,13 +63,17 @@ void init_page()
     free_page_list = free_page_list->next;
   }
   free_page_list = temppage;
-   
+  //free_page_list =(void*)KER_MEM;
 
 //  TODO();
 }
 
 void *kalloc()
 {
+  // assert((size_t)free_page_list+PGSIZE<=PHY_MEM);
+  // void* old = free_page_list;
+  // free_page_list = (void*)((size_t)free_page_list+PGSIZE);
+  // return old; 
   if((int)free_page_list<PHY_MEM){
     void * va = free_page_list;
     int index = ((int)va >> 22) & 0x3ff;
@@ -122,7 +126,7 @@ PD *vm_alloc()
   PD* pgdir = (PD*)kalloc();
   for (int i = 0; i < 32; i++)
   {
-    pgdir->pde[i].val = MAKE_PDE(&kpt[i], 1);   
+    pgdir->pde[i].val = MAKE_PDE(&kpt[i], 7);   
   }
   // for (int i = 0; i < (PHY_MEM / PT_SIZE); i++)
   // {
@@ -159,16 +163,17 @@ PTE *vm_walkpte(PD *pgdir, size_t va, int prot)
   // if not exist (PDE of va is empty) and !(prot&1), return NULL
   // remember to let pde's prot |= prot, but not pte
   assert(va>=PHY_MEM);
+  assert((prot & ~7) == 0);
   int pte_index = ADDR2TBL(va);
   int pde_index = ADDR2DIR(va);
-  PDE* pde_pointer = &pgdir->pde[pde_index];
+  PDE* pde_pointer = &(pgdir->pde[pde_index]);
 
   //assert(pde_pointer->val!=0);
   if(pde_pointer->present==0){
     if(prot!=0){
       PT* pt = kalloc();
       //pde_pointer->val |= prot;
-      pde_pointer->val = MAKE_PDE(pt, prot);
+      pde_pointer->val = MAKE_PDE(pt, 7);
       PTE* pte_pointer = &(pt->pte[pte_index]);
       return pte_pointer;
     }
@@ -176,12 +181,12 @@ PTE *vm_walkpte(PD *pgdir, size_t va, int prot)
       return NULL;
     }
   }
-  pde_pointer->val |= prot;
+  //pde_pointer->val |= prot;
   PT* pt = PDE2PT(*pde_pointer);
   PTE* pte_pointer = &(pt->pte[pte_index]);
   //Log("%d",pte_pointer->val);
   //assert(pte_pointer->val!=0);
-  assert((prot & ~7) == 0);
+  
   return pte_pointer;
   //TODO();
 }
@@ -221,9 +226,9 @@ void vm_map(PD *pgdir, size_t va, size_t len, int prot)
       void* add = kalloc();
       pte->val = MAKE_PTE(add,prot);
     }
-    else{
-      pte->val |= prot;
-    }
+    // else{
+    //   pte->val |= prot;
+    // }
     start+=PGSIZE;
   }
   //TODO();
@@ -270,6 +275,7 @@ void vm_unmap(PD *pgdir, size_t va, size_t len)
 
 void vm_copycurr(PD *pgdir)
 {
+  assert(pgdir!=NULL);
   // Lab2-2: copy memory mapped in curr pd to pgdir
   size_t va = PHY_MEM;
   //printf("USR_MEM = %x\n",USR_MEM);
@@ -277,13 +283,15 @@ void vm_copycurr(PD *pgdir)
     PTE *pte = vm_walkpte(vm_curr(), va, 7);
     
     if(pte != NULL && pte->present==1){        //need copy
-    
-        vm_map(pgdir,va,PGSIZE,7);
+        int prot = pte->val & 0x7;
+        vm_map(pgdir,va,PGSIZE,prot);
         
-        void* page = vm_walk(pgdir,va,7);
-        //void* oldpage = vm_walk(vm_curr(),va,7);
+        void* page = vm_walk(pgdir,va,prot);
         //printf("va = %x\n",va);
-        memcpy(page, (void*)va, PGSIZE);
+        void* oldpage = vm_walk(vm_curr(),va,7);
+        
+        //memcpy(page, (void*)va, PGSIZE);
+        memcpy(page, oldpage, PGSIZE);
         
     }
     va+=PGSIZE;

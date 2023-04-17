@@ -12,6 +12,7 @@ int main() {
   for (;;) {
     printf("$ ");
     getline(args, ARGS_BUF_LEN);
+    
     argc = 0;
     for (char *c = strtok(args, " \t\n"); c; c = strtok(NULL, " \t\n")) {
       if (argc == MAX_ARGS_NUM) break;
@@ -20,10 +21,12 @@ int main() {
     if (argc > 0) {
       argv[argc] = 0;
       int pid = fork();
+      
       if (pid == -1) {
         printf("sh: fork failed.\n");
         continue;
       } else if (pid == 0) {
+        //printf("sh pid = %d\n",pid);
         if (exec(argv[0], argv) == -1) {
           printf("sh: exec failed.\n");
           return 1;

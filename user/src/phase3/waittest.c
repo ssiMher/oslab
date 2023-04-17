@@ -6,7 +6,9 @@ void waittest(void) {
   int n, pid;
 
   for (n = 0; n < N; n++) {
+    
     pid = fork();
+    
     if (pid < 0)
       break;
     if (pid == 0)

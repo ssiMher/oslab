@@ -14,6 +14,7 @@ void child(size_t i) {
 
 int main() {
   size_t ans = 0;
+  //printf("444\n");
   printf("multiadd start.\n");
   for (size_t i = 0; i < 32; ++i) {
     if (fork() == 0) child(i);

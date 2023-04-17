@@ -27,10 +27,13 @@ proc_t *proc_alloc() {
   // init ALL attributes of the pcb
   pcb[i].pid = next_pid;
   next_pid++;
+  assert(next_pid<32768);
   pcb[i].status=UNINIT;
   pcb[i].pgdir = vm_alloc();
+  assert(pcb[i].pgdir!=NULL);
   pcb[i].brk = 0;
   pcb[i].kstack = kalloc();
+  assert(pcb[i].kstack!=NULL);
   pcb[i].ctx = &(pcb[i].kstack->ctx);
   pcb[i].parent = NULL;
   pcb[i].child_num = 0;
@@ -39,7 +42,7 @@ proc_t *proc_alloc() {
 
 void proc_free(proc_t *proc) {
   // Lab2-1: free proc's pgdir and kstack and mark it UNUSED
-  if(proc!=curr){
+  if(proc!=proc_curr()){
     proc->status=UNUSED;
   }
 }
@@ -49,35 +52,56 @@ proc_t *proc_curr() {
 }
 
 void proc_run(proc_t *proc) {
+  //printf("proc_run:proc %d\n",proc->pid);
+  assert(proc!=NULL);
   proc->status = RUNNING;
   curr = proc;
   set_cr3(proc->pgdir);
   set_tss(KSEL(SEG_KDATA), (uint32_t)STACK_TOP(proc->kstack));
+  //printf("proc_run pid: %d\n",proc->pid);
+  // if(proc->pid!=0){
+  //   printf("proc %d: proc->parent= 0x%x\n",proc->pid, proc->parent);
+  //   printf("proc %d: proc->ctx= 0x%x\n",proc->pid, proc->ctx);
+  //   printf("proc %d: proc->ctx->eip= 0x%x\n", proc->pid, proc->ctx->eip);
+  // }
   irq_iret(proc->ctx);
 }
 
 void proc_addready(proc_t *proc) {
   // Lab2-1: mark proc READY
+  assert(proc!=NULL);
   proc->status = READY;
 }
 
 void proc_yield() {
   // Lab2-1: mark curr proc READY, then int $0x81
+  //cli();
+  assert(curr!=NULL);
   curr->status = READY;
+  //printf("proc_yield\n");
   INT(0x81);
 }
 
 void proc_copycurr(proc_t *proc) {
   // Lab2-2: copy curr proc
+  assert(proc!=NULL);
   vm_copycurr(proc->pgdir);
   
   proc->brk = curr->brk;
+  assert(proc->kstack!=NULL);
   proc->kstack->ctx = curr->kstack->ctx;
+//  memcpy((void*)&proc->kstack->ctx, curr->ctx, sizeof(curr->kstack->ctx));
+  //memcpy((void*)&proc->kstack->ctx,(void*)&curr->kstack->ctx,sizeof(curr->kstack->ctx));
   //proc->ctx = &(proc->kstack->ctx);
-  
+  //printf("proc%d->ctx->eip = 0x%x\n",proc->pid, proc->ctx->eip);
+  //printf("curr%d->ctx->eip = 0x%x\n",curr->pid, curr->kstack->ctx.eip);
+  //printf("proc%d->ctx->irq = %d\n",proc->pid, proc->ctx->irq);
+  //printf("curr%d->ctx->irq = %d\n",curr->pid, curr->kstack->ctx.irq);
+  assert(proc->ctx!=NULL);
   proc->ctx->eax = 0;
   proc->parent = curr;
   //printf("111\n");
+  assert(curr!=NULL);
   (curr->child_num)++;
   
   // Lab2-5: dup opened usems
@@ -87,16 +111,30 @@ void proc_copycurr(proc_t *proc) {
 }
 
 void proc_makezombie(proc_t *proc, int exitcode) {
+  assert(proc!=NULL);
   // Lab2-3: mark proc ZOMBIE and record exitcode, set children's parent to NULL
+  proc->status = ZOMBIE;
+  proc->exit_code = exitcode;
+  for(int i = 1; i < PROC_NUM;i++){
+    if(pcb[i].parent==proc){
+      pcb[i].parent=NULL;
+    }
+  }
   // Lab2-5: close opened usem
   // Lab3-1: close opened files
   // Lab3-2: close cwd
-  TODO();
+  
 }
 
 proc_t *proc_findzombie(proc_t *proc) {
+  assert(proc!=NULL);
   // Lab2-3: find a ZOMBIE whose parent is proc, return NULL if none
-  TODO();
+  for(int i = 0;i < PROC_NUM;i++){
+    if(pcb[i].parent==proc && pcb[i].status==ZOMBIE){
+      return &pcb[i];
+    }
+  }
+  return NULL;
 }
 
 void proc_block() {
@@ -126,13 +164,18 @@ file_t *proc_getfile(proc_t *proc, int fd) {
 }
 
 void schedule(Context *ctx) {
+  assert(curr!=NULL);
   // Lab2-1: save ctx to curr->ctx, then find a READY proc and run it
   curr->ctx = ctx;
-  int i = curr-pcb;
-  i = (i + 1) % PROC_NUM;
+  int i = 0;
+  for(;&pcb[i]!=curr;i++);
+  i++;
+  
+  //i = (i + 1) % PROC_NUM;
   for(;;i++){
-    i%=PROC_NUM;
+    if(i==PROC_NUM) i = 0;
     if(pcb[i].status==READY)break;
   }
+  //printf("schedule proc: = %d\n",pcb[i].pid);
   proc_run(&pcb[i]);
 }

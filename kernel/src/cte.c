@@ -125,12 +125,15 @@ void irq_handle(Context *ctx) {
   }
   case(EX_SYSCALL):{
     do_syscall(ctx);
+    //printf("cte34\n");
     break;
   }
   // TODO: Lab1-7 handle serial and timer
   // TODO: Lab2-1 handle yield
   case(129):{       //lab2-1
+  
     schedule(ctx);
+    //printf("cte35\n");
     break;
   }
   default: assert(ctx->irq >= T_IRQ0 && ctx->irq < T_IRQ0 + NR_INTR);

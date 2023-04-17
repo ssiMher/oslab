@@ -24,8 +24,10 @@ void do_syscall(Context *ctx) {
   if (sysnum < 0 || sysnum >= NR_SYS) {
     res = -1;
   } else {
+    //printf("syscall res = ?\n");
     res = ((syshandle_t)(syscall_handle[sysnum]))(arg1, arg2, arg3, arg4, arg5);
   }
+
   ctx->eax = res;
 }
 
@@ -43,24 +45,26 @@ int sys_brk(void *addr) {
   // TODO: Lab1-5
   //static size_t brk = 0; // use brk of proc instead of this in Lab2-1
   proc_t* proc = proc_curr();
-  size_t brk = proc->brk;
+  //size_t brk = proc->brk;
   size_t new_brk = PAGE_UP(addr);
-  if (brk == 0) {
-    brk = new_brk;
-  } else if (new_brk > brk) {
+  if (proc->brk == 0) {
+    proc->brk = new_brk;
+  } else if (new_brk > proc->brk) {
     PD* pgdir = vm_curr();
-    int len = (int)new_brk-(int)brk;
-    vm_map(pgdir,brk,len, 7);
-    brk = new_brk;
+    size_t len = (size_t)new_brk-(size_t)proc->brk;
+    vm_map(pgdir,proc->brk,len, 7);
+    proc->brk = new_brk;
     //TODO();
-  } else if (new_brk < brk) {
+  } else if (new_brk < proc->brk) {
     //assert(0);
     // can just do nothing
-    uint32_t len = (uint32_t)brk - (uint32_t)new_brk;
-    vm_unmap(vm_curr(),new_brk, len);
-    brk = new_brk;
+    
+    // size_t len = (size_t)proc->brk - (size_t)new_brk;
+    // vm_unmap(vm_curr(),new_brk, len);
+    // proc->brk = new_brk;
     
   }
+  //proc->brk = brk;
   return 0;
 }
 
@@ -79,22 +83,26 @@ int sys_exec(const char *path, char *const argv[]) {
   //TODO(); // Lab1-8, Lab2-1
   PD* pgdir = vm_alloc();
   Context ctx;
+  //printf("exec\n");
   //char *argv[] = {"echo", "hello", "world", NULL};
   if(load_user(pgdir, &ctx, path, argv) != 0){
     //kfree(pgdir);
     return -1;
   }
   proc_t* proc = proc_curr();
+  //printf("exec proc pid= %d\n",proc->pid);
   proc->pgdir = pgdir;
   //PD* oldpd = vm_curr();
   set_cr3(pgdir);
   //kfree(oldpd);
-  set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
+  //set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
   //putchar('p');
+  
   irq_iret(&ctx);
 }
 
 int sys_getpid() {
+  assert(proc_curr()!=NULL);
   return proc_curr()->pid; // Lab2-1
 }
 
@@ -110,17 +118,42 @@ int sys_fork() {
   proc_copycurr(proc);
   
   proc_addready(proc);
+  assert(proc!=NULL);
+  //printf("123\n");
+  //printf("childproc->pid = %d\n",proc->pid);
   return proc->pid;
 }
 
 void sys_exit(int status) {
-  while (1) proc_yield(); // Lab2-3
+  //while (1) proc_yield(); // Lab2-3
+  proc_makezombie(proc_curr(),status);
+  INT(0x81);
+  assert(0);
 }
 
 int sys_wait(int *status) {
    // Lab2-3, Lab2-4
-  sys_sleep(250);
-  return 0;
+  //sys_sleep(250);
+  assert(proc_curr()!=NULL);
+  if(proc_curr()->child_num==0)return -1;
+  while(1){
+  proc_t* proc = proc_findzombie(proc_curr());
+  if(proc==NULL){
+    proc_yield();
+  }
+  else{
+    if(status!=NULL){
+      *status = proc->exit_code;
+    }
+      int pid = proc->pid;
+      proc_free(proc);
+      assert(proc_curr()!=NULL);
+      proc_curr()->child_num--;
+      return pid;
+    
+  }
+  }
+   //return 0;
 }
 
 int sys_sem_open(int value) {

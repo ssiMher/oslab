@@ -30,6 +30,7 @@ void sleep(int ticks) {
 }
 
 int exec(const char *path, char *const argv[]) {
+  //printf("ulib exec\n");
   return (int)syscall(SYS_exec, (size_t)path, (size_t)argv, 0, 0, 0);
 }
 
@@ -42,6 +43,7 @@ void yield() {
 }
 
 int fork() {
+  
   return (int)syscall(SYS_fork, 0, 0, 0, 0, 0);
 }
 

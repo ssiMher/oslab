@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < 8; ++i) {
     printf("ping: pid=%d, i=%d, x=%d\n", pid, i, x);
     sleep(25);
+    //printf("sleepover!\n");
   }
   while (1) ;
 }

@@ -22,8 +22,7 @@ uint32_t load_elf(PD *pgdir, const char *name)
     return -1;
   }
 
-  PD *oldpg = vm_curr();
-  set_cr3(pgdir);
+  
   for (int i = 0; i < elf.e_phnum; ++i)
   {
     iread(inode, elf.e_phoff + i * sizeof(ph), &ph, sizeof(ph));
@@ -31,21 +30,22 @@ uint32_t load_elf(PD *pgdir, const char *name)
     if (ph.p_type == PT_LOAD)
     {
       int prot = 7;
-      if ((ph.p_flags & PF_W) == 0)prot = 5;
+      //if ((ph.p_flags & PF_W) == 0)prot = 5;
       
       vm_map(pgdir, ph.p_vaddr, ph.p_memsz, prot);
-      
+      PD *oldpg = vm_curr();
+      set_cr3(pgdir);
     
       // Lab1-2: Load segment to physical memory
       iread(inode, ph.p_offset, (void *)ph.p_vaddr, ph.p_filesz);
       // memcpy((void (*))(ph->p_vaddr), (void *)((uint32_t)elf+ph->p_offset), ph->p_filesz);
       memset((void(*))(ph.p_vaddr + ph.p_filesz), 0, ph.p_memsz - ph.p_filesz);
       // Lab1-4: Load segment to virtual memory
-      
+      set_cr3(oldpg);
       // TODO();
     }
   }
-  set_cr3(oldpg);
+  
   // TODO: Lab1-4 alloc stack memory in pgdir
   vm_map(pgdir, USR_MEM-PGSIZE, PGSIZE, 7);
   iclose(inode);
@@ -57,8 +57,11 @@ uint32_t load_elf(PD *pgdir, const char *name)
 
 uint32_t load_arg(PD *pgdir, char *const argv[])
 {
+  PTE* pte = vm_walkpte(pgdir, USR_MEM-PGSIZE,7);
+  char *stack_top = PTE2PG(*pte) + PGSIZE;
   // Lab1-8: Load argv to user stack
-  char *stack_top = (char *)vm_walk(pgdir, USR_MEM - PGSIZE, 7) + PGSIZE;
+  //char *stack_top = (char *)vm_walk(pgdir, USR_MEM - PGSIZE, 7) + PGSIZE;
+  
   //Log("stack_top:0x%x\n",(int)stack_top);
   //char* base = (char *)vm_walk(pgdir, USR_MEM - PGSIZE, 7);
   //char *stack_top = (void*)((size_t)base + PGSIZE);
@@ -69,10 +72,7 @@ uint32_t load_arg(PD *pgdir, char *const argv[])
     assert(argc < MAX_ARGS_NUM);
     // push the string of argv[argc] to stack, record its va to argv_va[argc]
     //TODO();
-    int len = strlen(argv[argc]);
-    uint32_t top = (uint32_t)stack_top;
-    top-=(len+1);
-    stack_top = (void*)top;
+    stack_top -= strlen(argv[argc])+1;
     strcpy(stack_top, argv[argc]);
     argv_va[argc] = USR_MEM - PGSIZE + ADDR2OFF(stack_top); 
     

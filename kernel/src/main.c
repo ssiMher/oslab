@@ -60,18 +60,30 @@ void init_user_and_go() {
   //   Log("111\n");
   // }
   //proc_run(proc);
-  proc_t *proc = proc_alloc();
-assert(proc);
-char *argv[] = {"dfstest", NULL};
-assert(load_user(proc->pgdir, proc->ctx, "dfstest", argv) == 0);
-proc_addready(proc);
 
-sti();
-while (1) ;
+//   proc_t *proc = proc_alloc();
+// assert(proc);
+// char *argv[] = {"sh", NULL};
+// assert(load_user(proc->pgdir, proc->ctx, "sh", argv) == 0);
+// proc_addready(proc);
 
-
+// sti();
+// while (1) ;
 
   // uint32_t eip = load_elf(NULL, "loaduser");
   // assert(eip != -1);
   // ((void(*)())eip)();
+
+  proc_t *proc = proc_alloc();
+assert(proc);
+char *argv[] = {"sh", NULL};
+assert(load_user(proc->pgdir, proc->ctx, "sh", argv) == 0);
+proc_addready(proc);
+//while (1) proc_yield();
+
+sti();
+
+while (1) ;
+
+
 }
