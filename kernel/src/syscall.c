@@ -33,12 +33,18 @@ void do_syscall(Context *ctx) {
 
 int sys_write(int fd, const void *buf, size_t count) {
   // TODO: rewrite me at Lab3-1
-  return serial_write(buf, count);
+  file_t* file = proc_getfile(proc_curr(), fd);
+  if(file==NULL)return -1;
+  return fwrite(file, buf, count);
+  //return serial_write(buf, count);
 }
 
 int sys_read(int fd, void *buf, size_t count) {
   // TODO: rewrite me at Lab3-1
-  return serial_read(buf, count);
+  file_t* file = proc_getfile(proc_curr(), fd);
+  if(file==NULL)return -1;
+  return fread(file, buf, count);
+  //return serial_read(buf, count);
 }
 
 int sys_brk(void *addr) {
@@ -193,23 +199,58 @@ int sys_sem_close(int sem_id) {
 }
 
 int sys_open(const char *path, int mode) {
-  TODO(); // Lab3-1
+  // Lab3-1
+  int fd = proc_allocfile(proc_curr());
+  if(fd==-1)return -1;
+  file_t* file = fopen(path,mode);
+  if(file==NULL)return -1;
+  proc_curr()->files[fd] = file;
+  return fd;
 }
 
 int sys_close(int fd) {
-  TODO(); // Lab3-1
+  //TODO(); // Lab3-1
+  file_t* file = proc_getfile(proc_curr(), fd);
+  if(file==NULL)return -1;
+  fclose(file);
+  proc_curr()->files[fd] = NULL;
+  return 1;
 }
 
 int sys_dup(int fd) {
-  TODO(); // Lab3-1
+  //TODO(); // Lab3-1
+  int fdd = proc_allocfile(proc_curr());
+  if(fdd==-1)return -1;
+  file_t* file = proc_getfile(proc_curr(), fd);
+  if(file==NULL)return -1;
+  proc_curr()->files[fdd] = file;
+  fdup(file);
+  return fdd;
 }
 
 uint32_t sys_lseek(int fd, uint32_t off, int whence) {
-  TODO(); // Lab3-1
+  //TODO(); // Lab3-1
+  file_t* file = proc_getfile(proc_curr(), fd);
+  if(file==NULL)return -1;
+  return fseek(file, off, whence);
 }
 
 int sys_fstat(int fd, struct stat *st) {
-  TODO(); // Lab3-1
+  //TODO(); // Lab3-1
+  file_t* file = proc_getfile(proc_curr(), fd);
+  if(file==NULL)return -1;
+  if(file->type==TYPE_FILE||file->type==TYPE_DIR){
+    st->node = ino(file->inode);
+    st->size = isize(file->inode);
+    st->type = itype(file->inode);
+  }
+  else if(file->type==TYPE_DEV){
+    st->type = TYPE_DEV;
+    st->node = 0;
+    st->size = 0;
+  }
+  else assert(0);
+  return 0;
 }
 
 int sys_chdir(const char *path) {
