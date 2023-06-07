@@ -166,12 +166,24 @@ blk_t *iwalk(dinode_t *file, uint32_t blk_no) {
   // return the pointer to the file's data's blk_no th block, if no, alloc it
   if (blk_no < NDIRECT) {
     // direct address
-    TODO();
+    u_int32_t no = file->addrs[blk_no];
+    if(no==0){
+      file->addrs[blk_no] = balloc();
+    }
+    return bget(file->addrs[blk_no]);
   }
   blk_no -= NDIRECT;
   if (blk_no < NINDIRECT) {
     // indirect address
-    TODO();
+    uint32_t no = file->addrs[NDIRECT];
+    if(no==0){
+      file->addrs[NDIRECT] = balloc();
+    }
+    uint32_t undno = bget(file->addrs[NDIRECT])->u32buf[blk_no];
+    if(undno==0){
+      bget(file->addrs[NDIRECT])->u32buf[blk_no] = balloc();
+    }
+    return bget(bget(file->addrs[NDIRECT])->u32buf[blk_no]);
   }
   panic("file too big");
 }
@@ -179,7 +191,17 @@ blk_t *iwalk(dinode_t *file, uint32_t blk_no) {
 void iappend(dinode_t *file, const void *buf, uint32_t size) {
   // append buf to file's data, remember to add file->size
   // you can append block by block
-  TODO();
+  while (size)
+  {
+  uint32_t no = file->size / BLK_SIZE;
+  blk_t *blk = iwalk(file, no);
+  uint32_t offset = file->size % BLK_SIZE;
+  uint32_t sz = (uint32_t)MIN(size, BLK_SIZE - offset);
+  memcpy(&(blk->u8buf[offset]), buf, sz);
+  file->size+=sz;
+  buf += sz;
+  size -= sz;
+  }
 }
 
 void add_file(char *path) {
@@ -195,6 +217,11 @@ void add_file(char *path) {
   strcpy(dirent.name, basename(path));
   iappend(root, &dirent, sizeof dirent);
   // write the file's data, first read it to buf then call iappend
-  TODO();
+  while(!feof(fp))
+  {
+    uint32_t sz = fread(buf,1,sizeof(buf),fp);
+    iappend(inode, buf, sz);
+  }
+
   fclose(fp);
 }

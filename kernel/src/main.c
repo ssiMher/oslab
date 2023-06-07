@@ -31,50 +31,10 @@ void init_user_and_go() {
   // Lab1-8: argv
   // Lab2-1: proc
   // Lab3-2: add cwd
-  // PD *pgdir = vm_alloc();
-  // //uint32_t eip = load_elf(pgdir, "loaduser");
-  // uint32_t eip = load_elf(pgdir, "brktest");
-  // assert(eip != -1);
-  // set_cr3(pgdir);
-  // stack_switch_call((void*)(USR_MEM - 16), (void*)eip, 0);
 
-  
-/*  PD *pgdir = vm_alloc();
-  Context ctx;
-  //char *argv[] = {"echo", "hello", "world", NULL};
-  char *argv[] = {"sh1",NULL};
-  assert(load_user(pgdir, &ctx, "sh1", argv) == 0);
-  set_cr3(pgdir);
-  set_tss(KSEL(SEG_KDATA), (uint32_t)kalloc() + PGSIZE);
-  //putchar('p');
-  //Log("argv[0]addr:0x%x\n",&argv[1]);
-  irq_iret(&ctx);
-*/
-  // proc_t *proc = proc_alloc();
-  // assert(proc);
-  // char *argv[] = {"sh1", NULL};
-  // assert(load_user(proc->pgdir, proc->ctx, "sh1", argv) == 0);
-  // proc_addready(proc);
-  // while(1){
-  //   proc_yield();
-  //   Log("111\n");
-  // }
-  //proc_run(proc);
-
-//   proc_t *proc = proc_alloc();
-// assert(proc);
-// char *argv[] = {"sh", NULL};
-// assert(load_user(proc->pgdir, proc->ctx, "sh", argv) == 0);
-// proc_addready(proc);
-
-// sti();
-// while (1) ;
-
-  // uint32_t eip = load_elf(NULL, "loaduser");
-  // assert(eip != -1);
-  // ((void(*)())eip)();
 
   proc_t *proc = proc_alloc();
+ proc->cwd = iopen("/", TYPE_NONE);
 assert(proc);
 char *argv[] = {"sh", NULL};
 assert(load_user(proc->pgdir, proc->ctx, "sh", argv) == 0);

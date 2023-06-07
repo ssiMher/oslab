@@ -27,6 +27,7 @@ void test1() {
   assert(fd >= 0);
   for (int i = 0; i < 256; ++i) {
     assert(read(fd, buf1, BUFSIZE) == BUFSIZE);
+    //printf("i=%d\n",i);
     assert(memcmp(buf1, buf2, BUFSIZE) == 0);
   }
   sem_v(sem1);

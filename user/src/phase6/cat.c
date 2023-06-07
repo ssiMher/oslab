@@ -13,6 +13,7 @@ cat(int fd)
       exit(1);
     }
   }
+  //printf("cat() cat\n");
   if(n < 0){
     fprintf(2, "cat: read error\n");
     exit(1);
@@ -23,7 +24,7 @@ int
 main(int argc, char *argv[])
 {
   int fd, i;
-
+  //printf("cat()\n");
   if(argc <= 1){
     cat(0);
     exit(0);
@@ -34,6 +35,7 @@ main(int argc, char *argv[])
       fprintf(2, "cat: cannot open %s\n", argv[i]);
       exit(1);
     }
+    //printf("cat() open file\n");
     cat(fd);
     close(fd);
   }
